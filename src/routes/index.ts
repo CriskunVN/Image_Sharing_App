@@ -1,4 +1,4 @@
-import express, { Router } from "express";
+import express, { Router, Request, Response } from "express";
 
 import * as userController from "../controllers/user.controller";
 
