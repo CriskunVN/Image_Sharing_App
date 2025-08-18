@@ -84,7 +84,10 @@ const sendEmail = async ({
   });
 };
 
-export const verifyEmail = async (req: Request, res: Response) => {
+export const verifyEmail = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     // Get the confirmation token
     const { confirmationToken } = req.params;
@@ -105,11 +108,13 @@ export const verifyEmail = async (req: Request, res: Response) => {
         .status(201)
         .json({ message: "User verified successfully", data: user });
     } else {
-      return res.status(409).send("User Not Found");
+      res.status(409).json({ error: "User Not Found" });
+      return;
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
-    return res.status(400).send(err);
+    res.status(400).json({ error: err.message });
+    return;
   }
 };
 
@@ -177,5 +182,58 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
   } catch (err) {
     console.error(err);
     res.status(500).send("Internal server error");
+  }
+};
+
+export const login = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Get user data
+    const { emailOrUsername, password } = req.body;
+
+    // Validate user data
+    if (!(emailOrUsername && password)) {
+      res.status(400).json({ error: "All data is required" });
+      return;
+    }
+
+    // A regex expression to test if the given value is an email or username
+    let regexEmail = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+    const data: { email?: string; username?: string } = regexEmail.test(
+      emailOrUsername
+    )
+      ? {
+          email: emailOrUsername,
+        }
+      : {
+          username: emailOrUsername,
+        };
+
+    // Validate if user exist in our database
+    const user = await User.findOne(data);
+
+    if (user && (await bcrypt.compare(password, user.password))) {
+      // Create token
+      const email = user.email;
+      const token = jwt.sign(
+        { user_id: user._id, email },
+        process.env.TOKEN_SECRET_KEY as string,
+        {
+          expiresIn: "2h",
+        }
+      );
+
+      // save user token
+      user.token = token;
+
+      // user
+      res.status(200).json(user);
+      return;
+    }
+    res.status(400).json({ error: "Invalid Credentials" });
+    return;
+  } catch (err: any) {
+    console.error(err);
+    res.status(400).json({ error: err.message });
+    return;
   }
 };
