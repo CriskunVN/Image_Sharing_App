@@ -46,13 +46,11 @@ const createTransporter = async (): Promise<nodemailer.Transporter> => {
 interface SendEmailParams {
   email: string;
   username: string;
-  res: Response;
 }
 
 const sendEmail = async ({
   email,
   username,
-  res,
 }: SendEmailParams): Promise<void> => {
   // Create a unique confirmation token
   const confirmationToken = encrypt(username);
@@ -69,17 +67,15 @@ const sendEmail = async ({
     from: "Educative Fullstack Course",
     to: email,
     subject: "Email Confirmation",
-    html: `Press the following link to verify your email: <a href=${apiUrl}/verify/${confirmationToken}>Verification Link</a>`,
+    html: `Press the following link to verify your email: <a href=${apiUrl}/api/verify/${confirmationToken}>Verification Link</a>`,
   };
 
-  // Send the email
+  // Send the email (không gửi response ở đây)
   Transport.sendMail(mailOptions, function (error, response) {
     if (error) {
-      res.status(400).send(error);
+      console.error("Send email error:", error);
     } else {
-      res.status(201).json({
-        message: "Account created successfully, please verify your email.",
-      });
+      console.log("Confirmation email sent");
     }
   });
 };
@@ -128,6 +124,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
         (error as any).message ||
         "Invalid input";
       res.status(400).send(message);
+      return;
     }
 
     const { firstName, lastName, username, email, password } = req.body; // Get the user data
@@ -176,9 +173,10 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete (userObj as any).password;
 
+    await sendEmail({ email, username });
     // Return the created user data
     res.status(201).json(userObj);
-    return sendEmail({ email, username, res });
+    return;
   } catch (err) {
     console.error(err);
     res.status(500).send("Internal server error");

@@ -19,10 +19,12 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
+    "@types/cors": "^2.8.19",
     "@types/crypto-js": "^4.2.2",
     "@types/express": "^5.0.3",
     "@types/nodemailer": "^7.0.0",
     "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
