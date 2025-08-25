@@ -54,8 +54,8 @@ const sendEmail = async ({
 }: SendEmailParams): Promise<void> => {
   // Create a unique confirmation token
   const confirmationToken = encrypt(username);
-  const apiUrl =
-    process.env.API_URL ||
+  const apiUrlFrontend =
+    process.env.FRONTEND_URL ||
     "https://ed-5313042160418816.educative.run" ||
     "http://0.0.0.0:4000";
 
@@ -67,14 +67,19 @@ const sendEmail = async ({
     from: "Educative Fullstack Course",
     to: email,
     subject: "Email Confirmation",
-    html: `Press the following link to verify your email: <a href=${apiUrl}/api/verify/${confirmationToken}>Verification Link</a>`,
+    html: `Press the following link to verify your email: <a href=${apiUrlFrontend}/verify/${confirmationToken}>Verification Link</a>`,
   };
 
   // Send the email (không gửi response ở đây)
-  Transport.sendMail(mailOptions, function (error, response) {
+  Transport.sendMail(mailOptions, function (error: any, res: Response) {
     if (error) {
+      res.status(500).send(error);
       console.error("Send email error:", error);
     } else {
+      res.status(200).json({
+        status: "success",
+        message: "Confirmation email sent",
+      });
       console.log("Confirmation email sent");
     }
   });
