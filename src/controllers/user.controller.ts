@@ -180,7 +180,11 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
 
     await sendEmail({ email, username });
     // Return the created user data
-    res.status(201).json(userObj);
+    res.status(201).json({
+      status: "success",
+      message: "User created successfully , Please confirm your email",
+      data: userObj,
+    });
     return;
   } catch (err) {
     console.error(err);
