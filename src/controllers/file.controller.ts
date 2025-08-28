@@ -1,6 +1,45 @@
 import { File, validate } from "../models/file.model";
 import { Request, Response } from "express";
+import fs from "fs";
+import readline from "readline";
+import * as simpleSpellchecker from "simple-spellchecker";
+import stringSimilarity from "string-similarity";
 const BASE_URL = "https://ed-5313042160418816.educative.run";
+
+const SpellChecker = simpleSpellchecker.getDictionarySync("en-GB");
+
+const spellCheck = async (path: string) => {
+  const readInterface = readline.createInterface({
+    input: fs.createReadStream(path),
+    output: process.stdout,
+  });
+
+  let text: string = "";
+
+  for await (const line of readInterface) {
+    const correctedLine = line
+      .split(" ")
+      .map((word) => {
+        if (!SpellChecker.spellCheck(word)) {
+          const suggestions = SpellChecker.getSuggestions(word);
+          const matches = stringSimilarity.findBestMatch(
+            word,
+            suggestions.length === 0 ? [word] : suggestions
+          );
+
+          return matches.bestMatch.target;
+        } else {
+          return word;
+        }
+      })
+      .join(" ");
+    text += correctedLine + "\n";
+  }
+
+  fs.writeFile(path, text, (err: any): void => {
+    if (err) console.log("error", err);
+  });
+};
 
 export const upload = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -17,7 +56,12 @@ export const upload = async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ message: "No file uploaded" });
       return;
     }
-    const path = req.file.path;
+    let path: string = req.file.path;
+
+    if (req.file.mimetype === "text/plain") {
+      await spellCheck(req.file.path);
+      path = `${req.file.path}.txt`;
+    }
 
     const file = await File.create({
       name,
