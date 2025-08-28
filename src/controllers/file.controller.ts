@@ -1,11 +1,44 @@
 import { File, validate } from "../models/file.model";
 import { Request, Response } from "express";
 import fs from "fs";
+import path from "path";
 import readline from "readline";
 import * as simpleSpellchecker from "simple-spellchecker";
+import sharp from "sharp";
 import stringSimilarity from "string-similarity";
 const BASE_URL = "https://ed-5313042160418816.educative.run";
 
+// Process image
+const processImage = async (pathFile: string): Promise<string> => {
+  try {
+    const imgInstnace = sharp(pathFile);
+    const metadata = await imgInstnace.metadata();
+    const newPath = pathFile.split(".")[0] + "-img.jpeg";
+    imgInstnace
+      .resize({
+        width: 350,
+        fit: sharp.fit.contain,
+      })
+      .blur(1)
+      .toFormat("jpeg", { mozjpeg: true })
+      .composite([
+        {
+          input: "uploads/logo.png",
+          gravity: "center",
+        },
+      ])
+      .toFile(newPath);
+
+    return newPath;
+  } catch (error) {
+    console.log(
+      `An error occurred during processing the uploaded image: ${error}`
+    );
+  }
+  return pathFile;
+};
+
+// Process text file
 const SpellChecker = simpleSpellchecker.getDictionarySync("en-GB");
 
 const spellCheck = async (path: string) => {
@@ -57,6 +90,10 @@ export const upload = async (req: Request, res: Response): Promise<void> => {
       return;
     }
     let path: string = req.file.path;
+
+    if (req.file.mimetype.match(/^image/)) {
+      await processImage(req.file.path);
+    }
 
     if (req.file.mimetype === "text/plain") {
       await spellCheck(req.file.path);
