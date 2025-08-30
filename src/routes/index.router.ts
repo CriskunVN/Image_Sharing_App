@@ -12,4 +12,11 @@ router.post("/login", userController.login);
 router.get("/verify/:confirmationToken", userController.verifyEmail);
 // Map the 'upload' request to the upload function
 router.post("/upload", auth, upload.single("file"), fileController.upload);
+// Route of file
+router.get("/file", auth, fileController.searchFile);
+router.get("/file/:createdBy", auth, fileController.getAllFile);
+router.get("/file/:createdBy/:fileId", auth, fileController.getFileById);
+router.put("/file/:fileId", auth, fileController.updateFile);
+router.delete("/file/:fileId", auth, fileController.deleteFile);
+
 export default router;
